@@ -1,0 +1,57 @@
+services:
+  redis:
+    image: redis:latest
+    restart: always
+    networks:
+      - backend_network
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash -c "
+      python manage.py makemigrations &&
+      python manage.py migrate &&
+      python manage.py runserver 0.0.0.0:9096"
+    volumes:
+      - .:/app
+    ports:
+      - "9096:9096"
+    env_file:   
+
+      - env/.env.staging
+    depends_on:
+      - redis  # Ensure Redis starts first
+    networks:
+      - backend_network
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    command: celery -A ZenflowAi worker --loglevel=info
+    volumes:
+      - .:/app
+    env_file:
+      - env/.env.staging
+    depends_on:
+      - redis
+    networks:
+      - backend_network
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    command: celery -A ZenflowAi beat --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    env_file:
+      - env/.env.staging
+    depends_on:
+      - redis
+    networks:
+      - backend_network
+ 
+networks:
+  backend_network:
+    driver: bridge

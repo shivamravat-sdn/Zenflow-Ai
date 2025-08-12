@@ -1,0 +1,8 @@
+# Environment
+/env/.env.local
+/env/.env.prod
+
+# Miscellaneous Folder
+/.vscode
+
+.qodo
